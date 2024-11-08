@@ -42,6 +42,8 @@ Set Variables
     Set Global Variable  ${APPFLOWY_VM}        appflowy-vm
     Set Global Variable  ${BUSINESS_VM}        business-vm
 
+    Set Global Variable  ${RPI_IP_ADDRESS}     ${config['addresses']['measurement_agent']['device_ip_address']}
+
     IF  $BUILD_ID != '${EMPTY}'
         ${config}=     Read Config  ../config/${BUILD_ID}.json
         Set Global Variable    ${JOB}    ${config['Job']}
