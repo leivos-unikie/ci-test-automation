@@ -51,10 +51,12 @@ Check Network Availability
 
 Connect
     [Documentation]   Set up the SSH connection to the device
-    [Arguments]       ${IP}=${DEVICE_IP_ADDRESS}    ${PORT}=22    ${target_output}=ghaf@ghaf-host
+    [Arguments]       ${IP}=${DEVICE_IP_ADDRESS}    ${PORT}=22    ${target_output}=ghaf@net-vm
     ${connection}=    Open Connection    ${IP}    port=${PORT}    prompt=\$    timeout=30
     ${output}=        Login     username=${LOGIN}    password=${PASSWORD}
     Should Contain    ${output}    ${target_output}
+    Set Global Variable  ${netvm_ssh}    ${connection}
+    Connect to ghaf-host mod
     RETURN            ${connection}
 
 Connect to ghaf host
@@ -63,6 +65,32 @@ Connect to ghaf host
     ${connection}        Connect
     Set Global Variable  ${ghaf_host_ssh}    ${connection}
     RETURN               ${connection}
+
+Connect to ghaf-host mod
+    [Documentation]      Connect to ghaf-host from net-vm
+    [Arguments]    ${timeout}=60
+    Log To Console       Connecting to ghaf-host
+    ${failed_connection}  Set variable  True
+    ${start_time}  Get Time	epoch
+    FOR    ${i}    IN RANGE    10
+        TRY
+            ${connection}=       Open Connection    192.168.101.2    port=22    prompt=\$    timeout=30
+            ${output}=           Login    username=${LOGIN}     password=${PASSWORD}    jumphost_index_or_alias=${netvm_ssh}
+        EXCEPT    ChannelException: ChannelException(2, 'Connect failed')    type=LITERAL
+            ${diff}=    Evaluate    int(time.time()) - int(${start_time})
+            IF   ${diff} < ${timeout}
+                Sleep    1
+                CONTINUE
+            ELSE
+                BREAK
+            END
+        END
+        ${failed_connection}  Set variable  False
+        BREAK
+    END
+    IF  ${failed_connection}    FAIL  Couldn't connect ghaf-host
+    Set Global Variable  ${ghaf_host_ssh}   ${connection}
+    RETURN               ${ghaf_host_ssh}
 
 Connect to netvm
     [Documentation]      Connect to netvm directly from test run machine, using

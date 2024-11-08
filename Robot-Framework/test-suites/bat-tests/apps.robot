@@ -7,9 +7,6 @@ Force Tags          apps
 Resource            ../../resources/ssh_keywords.resource
 Resource            ../../config/variables.robot
 Resource            ../../resources/common_keywords.resource
-Library             ../../lib/gui_testing.py
-Library             Collections
-Library             BuiltIn
 Suite Teardown      Close All Connections
 
 
@@ -33,8 +30,9 @@ Start Chromium on LenovoX1
     [Documentation]   Start Chromium in dedicated VM and verify process started
     [Tags]            bat   SP-T92   lenovo-x1
     Verify service status  range=15  service=microvm@chromium-vm.service  expected_status=active  expected_state=running
-    Connect to netvm
-    Connect to VM       ${GUI_VM}
+    # Connect to netvm
+    # Connect to VM       ${GUI_VM}
+    Connect to VM if not already connected  ${GUI_VM}
     Check if ssh is ready on vm    ${CHROMIUM_VM}
     Start XDG application   Chromium
     Connect to VM       ${CHROMIUM_VM}
@@ -44,8 +42,9 @@ Start Chromium on LenovoX1
 Start Zathura on LenovoX1
     [Documentation]   Start Zathura in dedicated VM and verify process started
     [Tags]            bat   SP-T105   lenovo-x1
-    [Setup]           Connect to netvm
-    Connect to VM       ${GUI_VM}
+    # Connect to netvm
+    # Connect to VM       ${GUI_VM}
+    Connect to VM if not already connected  ${GUI_VM}
     Check if ssh is ready on vm    ${ZATHURA_VM}
     Start XDG application   'PDF Viewer'
     Connect to VM       ${ZATHURA_VM}
@@ -57,8 +56,9 @@ Start Zathura on LenovoX1
 Start Gala on LenovoX1
     [Documentation]   Start Gala in dedicated VM and verify process started
     [Tags]            bat   SP-T104   lenovo-x1
-    [Setup]           Connect to netvm
-    Connect to VM       ${GUI_VM}
+    # Connect to netvm
+    # Connect to VM       ${GUI_VM}
+    Connect to VM if not already connected  ${GUI_VM}
     Check if ssh is ready on vm    ${GALA_VM}
     Start XDG application   GALA
     Connect to VM       ${GALA_VM}
@@ -68,8 +68,9 @@ Start Gala on LenovoX1
 Start Element on LenovoX1
     [Documentation]   Start Element in dedicated VM and verify process started
     [Tags]            bat   SP-T52   lenovo-x1
-    [Setup]           Connect to netvm
-    Connect to VM          ${GUI_VM}
+    # Connect to netvm
+    # Connect to VM       ${GUI_VM}
+    Connect to VM if not already connected  ${GUI_VM}
     Check if ssh is ready on vm    ${COMMS_VM}
     Start XDG application  Element
     Connect to VM          ${COMMS_VM}
@@ -79,8 +80,9 @@ Start Element on LenovoX1
 Start Slack on LenovoX1
     [Documentation]   Start Slack in dedicated VM and verify process started
     [Tags]            bat   SP-T181   lenovo-x1
-    [Setup]           Connect to netvm
-    Connect to VM          ${GUI_VM}
+    # Connect to netvm
+    # Connect to VM       ${GUI_VM}
+    Connect to VM if not already connected  ${GUI_VM}
     Check if ssh is ready on vm    ${COMMS_VM}
     Start XDG application  Slack
     Connect to VM          ${COMMS_VM}
@@ -89,9 +91,10 @@ Start Slack on LenovoX1
 
 Start Appflowy on LenovoX1
     [Documentation]   Start Appflowy in dedicated VM and verify process started
-    [Tags]            appflowy   lenovo-x1  # Removed bat tag until final decision of this app is made
-    [Setup]           Connect to netvm
-    Connect to VM          ${GUI_VM}
+    [Tags]            appflowy   # Removed bat tag until final decision of this app is made
+    # Connect to netvm
+    # Connect to VM       ${GUI_VM}
+    Connect to VM if not already connected  ${GUI_VM}
     Check if ssh is ready on vm    appflowy-vm
     Start XDG application  AppFlowy
     Connect to VM          ${APPFLOWY_VM}
