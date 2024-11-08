@@ -32,6 +32,13 @@ def extract_time_interval(csv_file, start_time, end_time):
         return False
     return True
 
+def extract_time_interval(csv_file, start_time, end_time):
+    columns = ['time', 'meas_counter' 'power']
+    data = pd.read_csv(csv_file, names=columns)
+    interval = data.query("{} < time < {}".format(start_time, end_time))
+    interval.to_csv('power_interval.csv', index=False)
+    return
+
 def generate_graph(csv_file, test_name):
     data = pd.read_csv(csv_file)
     start_time = data['time'].values[0]
@@ -59,7 +66,6 @@ def generate_graph(csv_file, test_name):
 
     # Set maximum for tick number
     plt.locator_params(axis='x', nbins=40)
-
     plt.savefig(f'../test-suites/power_test.png')
     return
 

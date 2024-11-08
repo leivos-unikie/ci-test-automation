@@ -43,6 +43,16 @@ CPU One thread test
     ...                 The benchmark records to csv CPU events per second, events per thread, and latency data.
     ...                 Create visual plots to represent these metrics comparing to previous tests.
     [Tags]              cpu  SP-T61-1  nuc  orin-agx  orin-nx  lenovo-x1
+
+    # This could be done also in suite init if one wishes to save more comprehensive power logs
+    # Connects to measurement agent, saves the connection and starts power logging
+    # Start power measurement   ${BUILD_ID}   timeout=20
+    # Switch connection from measurement agent back to target device
+    # Switch Connection         ${ghaf_host_ssh}
+
+    # This is required for setting the interval for plotting
+    # Set start timestamp
+
     ${output}           Execute Command    sysbench cpu --time=10 --threads=1 --cpu-max-prime=20000 run
     Log                 ${output}
     &{cpu_data}         Parse Cpu Results   ${output}
@@ -56,6 +66,20 @@ CPU One thread test
         ${pass_msg}     Create improved message  ${statistics}
         Pass Execution            ${pass_msg}
     END
+
+    # This keyword creates a power vs time graph from start_timestamp (set before) to current moment
+    # Generate power plot           ${BUILD_ID}   ${TEST NAME}
+
+    # Only save the accumulated power log file to ../../../power_measurements/ and log average power
+    # Get power record              ${BUILD_ID}.csv
+    # Log average power             ../../../power_measurements/${BUILD_ID}.csv
+
+    # Without this measurement agent will log power forever (need to add some timeout to power logging script)
+    # Could be placed also to suite Teardown
+    # Stop recording power
+
+    # Switch connection back to target in case test run continues with other test cases
+    # Switch Connection                 ${ghaf_host_ssh}
 
 CPU multimple threads test
     [Documentation]     Run a CPU benchmark using Sysbench with a duration of 10 seconds and MULTIPLE threads.
