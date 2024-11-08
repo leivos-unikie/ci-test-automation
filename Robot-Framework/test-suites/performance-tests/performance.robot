@@ -9,6 +9,7 @@ Resource            ../../resources/device_control.resource
 Resource            ../../resources/serial_keywords.resource
 Resource            ../../config/variables.robot
 Resource            ../../resources/performance_keywords.resource
+Resource            ../../resources/power_meas_keywords.resource
 Library             ../../lib/output_parser.py
 Library             ../../lib/parse_perfbench.py
 Library             ../../lib/PerformanceDataProcessing.py  ${DEVICE}  ${BUILD_ID}  ${JOB}
@@ -38,7 +39,7 @@ nvpmodel check test
     END
 
 CPU One thread test
-    [Documentation]     Run a CPU benchmark using Sysbench with a duration of 10 seconds and a SINGLE thread.
+     [Documentation]     Run a CPU benchmark using Sysbench with a duration of 10 seconds and a SINGLE thread.
     ...                 The benchmark records to csv CPU events per second, events per thread, and latency data.
     ...                 Create visual plots to represent these metrics comparing to previous tests.
     [Tags]              cpu  SP-T61-1  nuc  orin-agx  orin-nx  lenovo-x1
@@ -351,7 +352,7 @@ Perf-Bench test
 Common Setup
     Set Variables   ${DEVICE}
     Run Keyword If  "${DEVICE_IP_ADDRESS}" == "NONE"    Get ethernet IP address
-    Connect
+    Connect to ghaf host
 
 LenovoX1 Setup
     [Documentation]    Reboot LenovoX1
