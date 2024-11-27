@@ -35,7 +35,7 @@ Connect to measurement agent
 Start recording power
     [Arguments]       ${file_name}   ${timeout}
     Log To Console    Starting to record power measurements
-    Run Keyword And Ignore Error  Execute Command   nohup python /home/ghaf/ghaf/ghaf-power-measurement/measure_power.py ${file_name}.csv   ${timeout} > output.log 2>&1 &  timeout=3
+    Run Keyword And Ignore Error  Execute Command   nohup python /home/ghaf/ghaf/ghaf-power-measurement/measure_power.py ${file_name}.csv ${timeout} > output.log 2>&1 &  timeout=3
 
 Stop recording power
     Log To Console    Stopping power recording
