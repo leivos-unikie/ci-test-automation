@@ -16,11 +16,11 @@ ${start_timestamp}        ${EMPTY}
 
 Start power measurement
     [Documentation]    Connect to the measurement agent and run script to start collecting measurement results
-    [Arguments]        ${id}=power_data
+    [Arguments]        ${id}=power_data   ${timeout}=200
     Connect to measurement agent
     # Multiple logging processes not allowed (for now)
     Stop recording power
-    Start recording power  ${id}
+    Start recording power  ${id}  ${timeout}
 
 Connect to measurement agent
     [Documentation]         Set up SSH connection to the measurement agent
@@ -33,9 +33,9 @@ Connect to measurement agent
     RETURN                  ${ssh_measurement}
 
 Start recording power
-    [Arguments]       ${file_name}=power_data
+    [Arguments]       ${file_name}   ${timeout}
     Log To Console    Starting to record power measurements
-    Run Keyword And Ignore Error  Execute Command   nohup python /home/ghaf/ghaf/ghaf-power-measurement/measure_power.py ${file_name}.csv > output.log 2>&1 &  timeout=3
+    Run Keyword And Ignore Error  Execute Command   nohup python /home/ghaf/ghaf/ghaf-power-measurement/measure_power.py ${file_name}.csv   ${timeout} > output.log 2>&1 &  timeout=3
 
 Stop recording power
     Log To Console    Stopping power recording

@@ -46,7 +46,7 @@ CPU One thread test
 
     # This could be done also in suite init if one wishes to save more comprehensive power logs
     # Connects to measurement agent, saves the connection and starts power logging
-    Start power measurement   ${BUILD_ID}
+    Start power measurement   ${BUILD_ID}   timeout=20
     # Switch connection from measurement agent back to target device
     Switch Connection         ${ghaf_host_ssh}
 
