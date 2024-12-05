@@ -45,6 +45,13 @@ Start power measurement
 Connect to measurement agent
     [Documentation]         Set up SSH connection to the measurement agent
     [Arguments]             ${IP}=${RPI_IP_ADDRESS}    ${PORT}=22    ${target_output}=ghaf@raspberrypi
+    # Use existing connection if available
+    ${status}  ${output}    Run Keyword And Ignore Error  Switch Connection       ${SSH_MEASUREMENT}
+    IF  '${status}'=='PASS'
+        Log To Console          Switched connection to measurement agent.
+        Set Global Variable     ${SSH_MEASUREMENT}  ${SSH_MEASUREMENT}
+        RETURN                  ${SSH_MEASUREMENT}
+    END
     Log To Console          Connecting to measurement agent
     ${connection}=          Open Connection    ${IP}    port=${PORT}    prompt=\$    timeout=15
     ${output}=              Login     username=${LOGIN_PI}    password=${PASSWORD_PI}
@@ -98,7 +105,7 @@ Generate power plot
         RETURN
     END
     ${end_timestamp}                  Get current timestamp
-    Switch Connection                 ${SSH_MEASUREMENT}
+    Run Keyword And Ignore Error      Connect to measurement agent
     Run Keyword And Ignore Error      Get power record    ${id}.csv
     Run Keyword And Ignore Error      Save power measurement interval   ${id}.csv  '${start_timestamp}'  '${end_timestamp}'
     Run Keyword And Ignore Error      Generate graph    power_interval.csv  ${test_name}
