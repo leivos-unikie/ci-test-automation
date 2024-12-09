@@ -44,9 +44,9 @@ Set Variables
     Set Global Variable  ${ADMIN_VM}           admin-vm
     Set Global Variable  @{VMS}                ${GUI_VM}  ${CHROME_VM}  ${GALA_VM}  ${ZATHURA_VM}  ${COMMS_VM}  ${BUSINESS_VM}  ${ADMIN_VM}
 
-    Run Keyword And Ignore Error  Set Global Variable  ${RPI_IP_ADDRESS}  ${config['addresses']['measurement_agent']['device_ip_address']}
+    # Run Keyword And Ignore Error  Set Global Variable  ${RPI_IP_ADDRESS}  ${config['addresses']['measurement_agent']['device_ip_address']}
 
-    Set Global Variable  ${RPI_IP_ADDRESS}           172.18.9.12
+    Set Global Variable  ${RPI_IP_ADDRESS}           172.18.16.10
 
     ${result} 	Run Process    sh    -c    cat /run/secrets/rpi-user  shell=true
     Set Global Variable        ${LOGIN_PI}   ${result.stdout}
