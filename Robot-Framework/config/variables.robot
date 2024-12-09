@@ -46,6 +46,13 @@ Set Variables
 
     Run Keyword And Ignore Error  Set Global Variable  ${RPI_IP_ADDRESS}  ${config['addresses']['measurement_agent']['device_ip_address']}
 
+    Set Global Variable  ${RPI_IP_ADDRESS}           172.18.9.12
+
+    ${result} 	Run Process    sh    -c    cat /run/secrets/rpi-user  shell=true
+    Set Global Variable        ${LOGIN_PI}   ${result.stdout}
+    ${result} 	Run Process    sh    -c    cat /run/secrets/rpi-pw  shell=true
+    Set Global Variable        ${PASSWORD_PI}   ${result.stdout}
+
     IF  $BUILD_ID != '${EMPTY}'
         ${config}=     Read Config  ../config/${BUILD_ID}.json
         Set Global Variable    ${JOB}    ${config['Job']}
