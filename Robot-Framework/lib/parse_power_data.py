@@ -60,7 +60,7 @@ def generate_graph(csv_file, test_name):
     # Set maximum for tick number
     plt.locator_params(axis='x', nbins=40)
 
-    plt.savefig(f'../test-suites/power_test.png')
+    plt.savefig(f'power_test.png')
     return
 
 def mean_power(csv_file):
