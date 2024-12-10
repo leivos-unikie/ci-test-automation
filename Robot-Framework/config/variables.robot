@@ -48,9 +48,9 @@ Set Variables
 
     Set Global Variable  ${RPI_IP_ADDRESS}           172.18.16.10
 
-    ${result} 	Run Process    sh    -c    cat /run/secrets/rpi-user  shell=true
+    ${result} 	Run Process    sh    -c    cat /run/secrets/pi-login  shell=true
     Set Global Variable        ${LOGIN_PI}   ${result.stdout}
-    ${result} 	Run Process    sh    -c    cat /run/secrets/rpi-pw  shell=true
+    ${result} 	Run Process    sh    -c    cat /run/secrets/pi-pass  shell=true
     Set Global Variable        ${PASSWORD_PI}   ${result.stdout}
 
     IF  $BUILD_ID != '${EMPTY}'
