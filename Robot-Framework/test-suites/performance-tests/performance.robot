@@ -160,7 +160,7 @@ FileIO test
     ...                 The benchmark records File Operations, Throughput, Average Events per Thread,
     ...                 and Latency for read and write operations.
     ...                 Create visual plots to represent these metrics comparing to previous tests.
-    [Tags]              fileio  SP-T61-7  nuc  orin-agx  orin-nx
+    [Tags]              fileio  SP-T61-7  nuc  orin-agx  orin-nx  lenovo-x1
 
     Transfer FileIO Test Script To DUT
 
