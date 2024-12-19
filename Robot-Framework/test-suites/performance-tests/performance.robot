@@ -168,6 +168,9 @@ FileIO test
     # Results are saved to /tmp
     IF  "Lenovo" in "${DEVICE}"
         # Execute Command      cp /tmp/fileio_test /gp_storage  sudo=True  sudo_password=${PASSWORD}
+        Execute Command      cd /tmp
+        ${pwd_output}        Execute Command      pwd
+        Log                  ${pwd_output}
         ${out}  Write        sudo /tmp/fileio_test ${threads_number} /tmp
         ${out}  SSHLibrary.Read Until   password for ghaf:
         ${out}  Write        ${PASSWORD}
