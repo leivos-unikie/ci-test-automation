@@ -167,18 +167,18 @@ FileIO test
     # In case of Lenovo-X1 run the test in /gp_storage which has more disk space
     # Results are saved to /tmp
     IF  "Lenovo" in "${DEVICE}"
-        Execute Command      cp /tmp/fileio_test /gp_storage  sudo=True  sudo_password=${PASSWORD}
-        ${out}  Write        sudo /gp_storage/fileio_test ${threads_number} /gp_storage
+        # Execute Command      cp /tmp/fileio_test /gp_storage  sudo=True  sudo_password=${PASSWORD}
+        ${out}  Write        sudo /tmp/fileio_test ${threads_number} /tmp
         ${out}  SSHLibrary.Read Until   password for ghaf:
         ${out}  Write        ${PASSWORD}
         ${out}  SSHLibrary.Read Until Prompt
-        Execute Command      cd /tmp
+        # Execute Command      cd /tmp
     ELSE
         Execute Command      /tmp/fileio_test ${threads_number}  sudo=True  sudo_password=${PASSWORD}
         Execute Command      cd /tmp  sudo=True  sudo_password=${PASSWORD}
     END
 
-    ${test_info}  Execute Command    /tmp/cat sysbench_results/test_info
+    ${test_info}  Execute Command    cat /tmp/sysbench_results/test_info
     IF  "Insufficient disk space" in $test_info
         FAIL            Insufficient disk space for fileio test.
     END
