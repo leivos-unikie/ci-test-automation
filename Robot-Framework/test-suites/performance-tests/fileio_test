@@ -1,5 +1,7 @@
 # Test set to be run with sysbench
 
+echo pwd
+
 # These variables need to be given on the command line. For example: ./fileio_test 20
 THREADS="$1"
 DISK_CHECK_DIRECTORY="${2:-/}"
