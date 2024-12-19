@@ -172,10 +172,10 @@ FileIO test
         # ${pwd_output}        Execute Command      cd /tmp ; pwd
         # Log                  ${pwd_output}
         Write                 cd /tmp
-        Write                 /tmp/fileio_test ${threads_number} /tmp
+        Write                 sudo /tmp/fileio_test ${threads_number} /tmp
         # ${out}  Write        sudo /tmp/fileio_test ${threads_number} /tmp
-        # ${out}  SSHLibrary.Read Until   password for ghaf:
-        # ${out}  Write        ${PASSWORD}
+        ${out}                SSHLibrary.Read Until   password for ghaf:
+        ${out}                Write        ${PASSWORD}
         ${out}                SSHLibrary.Read Until Prompt
         # ${output}         Execute Command       cd /tmp ; /tmp/fileio_test ${threads_number} /tmp  sudo=True  sudo_password=${PASSWORD}
         Log                  ${out}
