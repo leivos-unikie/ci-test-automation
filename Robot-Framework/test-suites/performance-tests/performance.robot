@@ -175,7 +175,8 @@ FileIO test
         # ${out}  SSHLibrary.Read Until   password for ghaf:
         # ${out}  Write        ${PASSWORD}
         # ${out}  SSHLibrary.Read Until Prompt
-        Execute Command       cd /tmp ; /tmp/fileio_test ${threads_number}  sudo=True  sudo_password=${PASSWORD}
+        ${output}         Execute Command       cd /tmp ; /tmp/fileio_test ${threads_number} /tmp  sudo=True  sudo_password=${PASSWORD}
+        Log                  ${output}
     ELSE
         Execute Command      /tmp/fileio_test ${threads_number}  sudo=True  sudo_password=${PASSWORD}
         Execute Command      cd /tmp  sudo=True  sudo_password=${PASSWORD}
