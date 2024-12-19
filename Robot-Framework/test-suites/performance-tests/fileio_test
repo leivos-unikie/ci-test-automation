@@ -1,6 +1,6 @@
 # Test set to be run with sysbench
 
-echo pwd
+echo $(pwd)
 
 # These variables need to be given on the command line. For example: ./fileio_test 20
 THREADS="$1"
