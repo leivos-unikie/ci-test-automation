@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2022-2025 Technology Innovation Institute (TII)
+# SPDX-License-Identifier: Apache-2.0
+
+sleep 1
+mkdir /dev/shm/test
+for index1 in $(seq 1000); do
+    for index2 in $(seq 2000); do
+        echo "fillthememorywiththisdata" >> /dev/shm/test/file${index2}
+        # sleep 0.0001
+    done
+done
