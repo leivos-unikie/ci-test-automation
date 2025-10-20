@@ -80,9 +80,8 @@ Save power measurement interval
         Log To Console    Invalid timestamp critera for extracting power data
         RETURN
     END
-    IF  ${hw_measurement}
-        ${divider}      Set Variable  1
-    ElSE
+    ${divider}      Set Variable  1
+    IF  not ${hw_measurement}
         ${divider}      Set Variable  1000
     END
     Run Keyword And Ignore Error  Extract time interval  ${file_name}  ${start_time}  ${end_time}  ${output_filename}  ${check_freq}  ${divider}

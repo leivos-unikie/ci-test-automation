@@ -27,7 +27,7 @@ class ParsePowerData:
         interval = data.query("{} < time < {}".format(start_time, end_time))
         if divider != 1:
             for i in range(len(interval['power'])):
-                interval['power'][i] = data['power'][i] / divider
+                interval.loc[i, "power"] = interval['power'][i] / divider
         interval.to_csv(self.power_meas_dir + output_filename, index=False)
         if check_freq:
             self.check_measurement_frequency(data)

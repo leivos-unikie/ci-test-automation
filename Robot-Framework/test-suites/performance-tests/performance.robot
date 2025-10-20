@@ -16,6 +16,7 @@ Resource            ../../resources/performance_keywords.resource
 Resource            ../../resources/serial_keywords.resource
 Resource            ../../resources/setup_keywords.resource
 Resource            ../../resources/ssh_keywords.resource
+Resource            ../../resources/power_meas_keywords.resource
 
 Suite Setup         Connect to device
 Suite Teardown      Close All Connections
@@ -70,10 +71,13 @@ CPU resource isolation test
     ...                     simultaneously to simulate cpu exhaustion attack. Select the VMs with the highest vscpu
     ...                     quota (4) allocated to get the maximum effect.
     [Tags]                  cpu_isolation  SP-T298  lenovo-x1  darter-pro  dell-7330
+    Start BAT0 power logging
     # Overshoot the sysbench cpu thread number in the attacking VM although qemu will/should limit it to 4.
     Single vs Parallel CPU test       reference-vm=${BUSINESS_VM}   ref_threads=4   attack-vm=${CHROME_VM}   attack_threads=20
+    Sleep                   60
     [Teardown]              Run Keywords    Close All Connections
     ...                     AND             Connect to ghaf host
+    ...                     AND             Plot BAT0 power log
 
 Memory Read One thread test
     [Documentation]         Run a memory benchmark using Sysbench for 60 seconds with a SINGLE thread.
