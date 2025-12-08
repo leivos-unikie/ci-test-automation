@@ -59,12 +59,16 @@ CPU multiple threads test
     ...                     The benchmark records to csv CPU events per second, events per thread, and latency data.
     ...                     Create visual plots to represent these metrics comparing to previous tests.
     [Tags]                  cpu  SP-T61-2  nuc  orin-agx  orin-agx-64  orin-nx  lenovo-x1  darter-pro  dell-7330
+    Start parameter logging  ${HOST}  100
+    Start BAT0 power logging
     Sleep                   5
     ${output}               Execute Command    sysbench cpu --time=10 --threads=${threads_number} --cpu-max-prime=20000 run
     Log                     ${output}
     &{cpu_data}             Parse Cpu Results   ${output}
     &{statistics}           Save Cpu Data       ${TEST NAME}  ${cpu_data}
     Log                     <img src="${REL_PLOT_DIR}${DEVICE}_${TEST NAME}.png" alt="CPU Plot" width="1200">    HTML
+    Plot parameter log      ${HOST}  avg_cpu_freq  MHz
+    Plot BAT0 power log
     Determine Test Status   ${statistics}
 
 CPU resource isolation test
