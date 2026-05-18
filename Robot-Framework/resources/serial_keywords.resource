@@ -5,6 +5,7 @@
 Library             ../lib/KMTronicLibrary.py   ${RELAY_SERIAL_PORT}
 Library             ../lib/output_parser.py
 Library             AdvancedLogging
+Library             OperatingSystem
 Library             SerialLibrary    encoding=ascii
 Library             String
 Resource            ../resources/device_control.resource
@@ -79,10 +80,14 @@ Check Serial Connection
 
 Log In To Ghaf OS
     [Documentation]       Log in with ${LOGIN} and ${PASSWORD}
-    Log To Console        Trying to log in via serial...
-    FOR    ${i}    IN RANGE    10
+    [Arguments]           ${attempts}=10    ${read_timeout}=5    ${console}=${True}
+    ${logged_in}    Set Variable    ${False}
+    IF    ${console}
+        Log To Console    Trying to log in via serial...
+    END
+    FOR    ${i}    IN RANGE    ${attempts}
         Write Data        ${\n}
-        ${output}         SerialLibrary.Read Until    terminator=${HOST} login    timeout=5
+        ${output}         SerialLibrary.Read Until    terminator=${HOST} login    timeout=${read_timeout}
         ${status}         Run Keyword And Return Status    Should contain    ${output}    ${HOST} login
         IF  ${status}
             Write Data    ${LOGIN}${\n}
@@ -91,12 +96,17 @@ Log In To Ghaf OS
         END
         ${status}         Run Keyword And Return Status    Should contain    ${output}    @${HOST}
         IF  ${status}
-            Log           Successfully logged in      console=True
+            ${logged_in}    Set Variable    ${True}
+            IF    ${console}
+                Log    Successfully logged in    console=True
+            END
             BREAK
         END
     END
-    RETURN    ${status}
-    IF    ${status}==False    FAIL      Console is not ready
+    IF    not ${logged_in}
+        FAIL    Console is not ready
+    END
+    RETURN    ${logged_in}
 
 Verify init.scope status via serial
     [Arguments]         ${range}=60
@@ -129,7 +139,7 @@ Connect via serial
     [Arguments]         ${timeout}=1.0
     ${status}           Open Serial Port    timeout=${timeout}
     IF    ${status}
-        ${status}   Log In To Ghaf OS
+        ${status}   Run Keyword And Return Status    Log In To Ghaf OS
     END
     RETURN    ${status}
 
@@ -179,22 +189,79 @@ Verify shutdown via serial
     RETURN            ${time}
     [Teardown]        Delete All Ports
 
+Run Command On Serial
+    [Arguments]    ${command}    ${capture}=${True}    ${timeout}=30
+    ${uart_capture_active}    Get Variable Value    ${UART_CAPTURE_ACTIVE}    ${False}
+    ${marker_seed}    Generate Random String    8
+    ${start_marker_plain}    Set Variable    __SERIAL_BEGIN_${marker_seed}__
+    ${end_marker_plain}    Set Variable    __SERIAL_END_${marker_seed}__
+    ${start_time}    Get Time    epoch
+    Drain Serial Output
+    Write Data    printf '\\r\\n${start_marker_plain}\\r\\n'; ${command}; printf '\\r\\n${end_marker_plain}\\r\\n'${\n}
+    ${capturing}    Set Variable    ${False}
+    ${output}    Set Variable    ${EMPTY}
+    WHILE    True
+        ${elapsed}    Evaluate    int(time.time()) - int(${start_time})
+        IF    ${elapsed} >= ${timeout}
+            ${output}    Strip String    ${output}
+            FAIL    Timed out after ${timeout}s waiting for serial command completion: ${command}\nPartial output:\n${output}
+        END
+        ${status}    ${line}    Run Keyword And Ignore Error    SerialLibrary.Read Until    terminator=${\n}    timeout=1
+        IF    '${status}' != 'PASS'
+            BREAK
+        END
+        ${line}    Replace String    ${line}    \r    ${EMPTY}
+        ${line}    Replace String Using Regexp    ${line}    \\x1B\\[[0-9;?]*[ -/]*[@-~]    ${EMPTY}
+        ${line}    Strip String    ${line}
+        IF    $line == ''
+            CONTINUE
+        END
+        IF    not ${capturing}
+            IF    $line == $start_marker_plain
+                ${capturing}    Set Variable    ${True}
+            END
+            CONTINUE
+        END
+        IF    $line == $end_marker_plain
+            BREAK
+        END
+        IF    $command != '' and $line == $command
+            CONTINUE
+        END
+        IF    'ghaf@' in $line or '[?2004' in $line or $line == '~]$' or $line == ']$'
+            CONTINUE
+        END
+        ${output}    Catenate    SEPARATOR=\n    ${output}    ${line}
+    END
+    ${output}    Strip String    ${output}
+    Drain Serial Output
+    IF    ${capture} and ${uart_capture_active}
+        Append Normalized UART Capture    ${command}${\n}${output}
+    END
+    RETURN    ${output}
+
 Run Command on VM Via Serial
-    [Arguments]        ${vm}    ${command}    ${timeout}=5
+    [Arguments]        ${vm}    ${command}    ${timeout}=10    ${console}=${True}
     IF    "${SERIAL_PORT}" == "NONE"
         FAIL    Serial port is not configured. Cannot execute ${vm} commands via serial.
     END
-    ${status}          Connect via serial   timeout=${timeout}
-    IF    ${status} == False
-        FAIL    Failed to connect via serial. Cannot execute ${vm} commands.
+    ${uart_capture_active}    Get Variable Value    ${UART_CAPTURE_ACTIVE}    ${False}
+    ${opened_here}     Set Variable    ${False}
+    IF    not ${uart_capture_active}
+        ${status}          Connect via serial   timeout=${timeout}
+        IF    ${status} == False
+            FAIL    Failed to connect via serial. Cannot execute ${vm} commands.
+        END
+        ${opened_here}    Set Variable    ${True}
     END
-    ${marker_seed}     Generate Random String    8
-    ${marker}          Set Variable    __SERIAL_CMD_${marker_seed}__
     ${escaped_cmd}     Replace String    ${command}    "    \\" 
-    ${ssh_command}     Set Variable    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${vm} "${escaped_cmd}"; echo ${marker}
-    Log                Running command in ${vm}     console=True
+    ${ssh_command}     Set Variable    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${vm} "${escaped_cmd}"
+    IF    ${console}
+        Log    Running command in ${vm}    console=True
+    END
+    Drain Serial Output
     Write Data         ${ssh_command}${\n}
-    # Consume echoed command line to avoid matching marker before command output
+    # Consume echoed command line before waiting for the host prompt again.
     SerialLibrary.Read Until    terminator=${\n}
     ${pre_output}      Set Variable    ${EMPTY}
     ${search1}         Set Variable    (yes/no/[fingerprint])?
@@ -215,22 +282,161 @@ Run Command on VM Via Serial
             Write Data    ${PASSWORD}${\n}
         END
     END
-    IF  not $marker in $output
-        ${output}          SerialLibrary.Read Until    terminator=${marker}
+    ${prompt_output}   SerialLibrary.Read Until    terminator=ghaf@${HOST}:    timeout=${timeout}
+    ${output}          Catenate    SEPARATOR=    ${pre_output}    ${output}    ${prompt_output}
+    IF    ${opened_here}
+        Delete All Ports
     END
-    IF  not $marker in $output
-        Log    ${output}
-        FAIL   Failed to run command on ${vm} via serial
-    END
-    ${output}          Replace String    ${output}    ${marker}    ${EMPTY}
-    ${output}          Replace String    ${output}    \r    ${EMPTY}
-    ${output}          Catenate    SEPARATOR=    ${pre_output}    ${output}
-    SerialLibrary.Read Until    ghaf@${HOST}:
-    Delete All Ports
-    ${clean_output}    Strip String    ${output}
+    ${clean_output}    Normalize Serial Output    ${output}
     Log                ${clean_output}
     ${lower_output}    Convert To Lowercase    ${clean_output}
     IF  'permission denied' in $lower_output or 'could not resolve hostname' in $lower_output or 'no route to host' in $lower_output
         FAIL    Failed to execute '${command}' on ${vm} via serial: ${clean_output}
     END
     RETURN            ${clean_output}
+
+Start UART Log Capture
+    [Arguments]    ${log_file}=${EMPTY}
+    ${capture_file}    Set Variable If    '${log_file}' == '${EMPTY}'    ${OUTPUT_DIR}/${TEST NAME}.log    ${log_file}
+    ${status}    Open Serial Port
+    IF    not ${status}
+        Log To Console    Failed to open serial port for UART capture.
+        Set Global Variable    ${UART_CAPTURE_ACTIVE}    ${False}
+        RETURN
+    END
+    Set Global Variable    ${UART_CAPTURE_ACTIVE}    ${True}
+    Set Global Variable    ${UART_CAPTURE_FILE}      ${capture_file}
+    OperatingSystem.Create File    ${UART_CAPTURE_FILE}
+
+Drain UART Output
+    ${uart_capture_active}    Get Variable Value    ${UART_CAPTURE_ACTIVE}    ${False}
+    IF    not ${uart_capture_active}
+        RETURN
+    END
+    Drain Serial Output
+
+Drain Serial Output
+    ${empty_reads}    Set Variable    0
+    WHILE    True
+        ${status}    ${output}    Run Keyword And Ignore Error    SerialLibrary.Read Until    terminator=${\n}    timeout=1
+        IF    '${status}' != 'PASS'
+            BREAK
+        END
+        ${clean_output}    Strip String    ${output}
+        IF    $clean_output == '${EMPTY}'
+            ${empty_reads}    Evaluate    ${empty_reads} + 1
+            IF    ${empty_reads} >= 3
+                BREAK
+            END
+            CONTINUE
+        END
+        ${empty_reads}    Set Variable    0
+        Append Normalized UART Capture    ${output}
+    END
+
+Append Normalized UART Capture
+    [Arguments]    ${output}
+    ${uart_capture_active}    Get Variable Value    ${UART_CAPTURE_ACTIVE}    ${False}
+    IF    not ${uart_capture_active}
+        RETURN
+    END
+    ${normalized_output}    Normalize Serial Output    ${output}
+    IF    $normalized_output != ''
+        OperatingSystem.Append To File    ${UART_CAPTURE_FILE}    ${normalized_output}${\n}
+    END
+
+Collect UART Failure Diagnostics
+    ${uart_capture_active}    Get Variable Value    ${UART_CAPTURE_ACTIVE}    ${False}
+    IF    ${uart_capture_active}
+        ${status}    Run Keyword And Return Status    Wait Until Keyword Succeeds    24x    5s    Log In To Ghaf OS    attempts=1    read_timeout=1    console=${False}
+    ELSE
+        ${status}    Run Keyword And Return Status    Connect via serial    timeout=60
+    END
+    IF    not ${status}
+        Log    Failed to connect via serial, UART diagnostics were not collected.
+        RETURN
+    END
+    Log To Console    Collecting failure diagnostics via UART...
+    ${diag_command}    Set Variable    { uname -r; uptime; systemd-analyze; ip -br a; ss -tlnp; systemctl --failed --no-legend; dmesg | tail -200; journalctl -b --no-pager -o short-monotonic; }
+    Run Command On Serial    sh -c '${diag_command} > /tmp/${HOST}-diag.txt'
+    Save Serial File Output To File    /tmp/${HOST}-diag.txt    ${OUTPUT_DIR}/${HOST}-diag.txt    batch_size=500
+    Run Command On Serial    sh -c 'journalctl -u microvm@net-vm --no-pager > /tmp/ghaf-host-microvm-net-vm-journal.txt'
+    Save Serial File Output To File    /tmp/ghaf-host-microvm-net-vm-journal.txt    ${OUTPUT_DIR}/ghaf-host-microvm-net-vm-journal.log    batch_size=500
+    ${vm_list_output}    Run Command On Serial    command ls --color=never -1 /var/lib/microvms/
+    @{vm_list}    Get Regexp Matches    ${vm_list_output}    (?m)^[A-Za-z0-9_.-]+$
+    Should Not Be Empty    ${vm_list}    VM list is empty
+    FOR    ${vm}    IN    @{vm_list}
+        Run Command on VM Via Serial    ${vm}    sh -c '${diag_command} > /tmp/${vm}-diag.txt'
+        Save VM File Output To File    ${vm}    /tmp/${vm}-diag.txt    ${OUTPUT_DIR}/${vm}-diag.txt    batch_size=500
+    END
+
+Save Serial File Output To File
+    [Arguments]    ${remote_file}    ${output_file}    ${batch_size}=500
+    Save File Output Via Serial Chunk Read    ${output_file}    ${batch_size}    Read Serial File Chunk    ${remote_file}
+
+Save VM File Output To File
+    [Arguments]    ${vm}    ${remote_file}    ${output_file}    ${batch_size}=500
+    Save File Output Via Serial Chunk Read    ${output_file}    ${batch_size}    Read VM File Chunk    ${vm}    ${remote_file}
+
+Save File Output Via Serial Chunk Read
+    [Arguments]    ${output_file}    ${batch_size}    ${read_chunk_keyword}    @{read_chunk_args}
+    ${uart_capture_active}    Get Variable Value    ${UART_CAPTURE_ACTIVE}    ${False}
+    OperatingSystem.Create File    ${output_file}
+    Drain Serial Output
+    ${start_line}    Set Variable    1
+    ${copied_lines}    Set Variable    0
+    WHILE    True
+        ${end_line}    Evaluate    ${start_line} + ${batch_size} - 1
+        ${chunk}    Run Keyword    ${read_chunk_keyword}    @{read_chunk_args}    ${start_line}    ${end_line}
+        ${chunk}    Strip String    ${chunk}
+        IF    $chunk == ''
+            Log To Console    No more lines to copy from serial source after line ${start_line}.
+            BREAK
+        END
+        OperatingSystem.Append To File    ${output_file}    ${chunk}${\n}
+        IF    ${uart_capture_active}
+            Append Normalized UART Capture    ${chunk}
+        END
+        ${chunk_line_count}    Evaluate    len($chunk.splitlines())
+        ${copied_lines}    Evaluate    ${copied_lines} + ${chunk_line_count}
+        ${start_line}    Evaluate    ${start_line} + ${batch_size}
+        Log To Console    Copied ${chunk_line_count} lines (${copied_lines} total) from serial source to ${output_file}
+        IF    ${chunk_line_count} < ${batch_size}
+            BREAK
+        END
+    END
+
+Read Serial File Chunk
+    [Arguments]    ${remote_file}    ${start_line}    ${end_line}
+    ${chunk_command}    Set Variable    sed -n '${start_line},${end_line}p' ${remote_file}
+    ${chunk}    Run Command On Serial    ${chunk_command}    capture=${False}
+    RETURN    ${chunk}
+
+Read VM File Chunk
+    [Arguments]    ${vm}    ${remote_file}    ${start_line}    ${end_line}
+    ${chunk_command}    Set Variable    sed -n '${start_line},${end_line}p' ${remote_file}
+    ${chunk}    Run Command on VM Via Serial    ${vm}    ${chunk_command}    timeout=30    console=${False}
+    RETURN    ${chunk}
+
+Normalize Serial Output
+    [Arguments]    ${raw}
+    ${output}    Replace String    ${raw}    \r    ${EMPTY}
+    # Strip CSI escape sequences used for screen control, colors, cursor moves, and terminal resets.
+    ${output}    Replace String Using Regexp    ${output}    \\x1B\\[[0-?]*[ -/]*[@-~]    ${EMPTY}
+    # Strip OSC escape sequences, such as title-setting and similar terminal metadata.
+    ${output}    Replace String Using Regexp    ${output}    \\x1B\\][^\\x07]*(\\x07|\\x1B\\\\)    ${EMPTY}
+    # Strip DCS / PM / APC style escape sequences that some firmware and consoles emit.
+    ${output}    Replace String Using Regexp    ${output}    \\x1B[P^_].*?\\x1B\\\\    ${EMPTY}
+    # Remove remaining ASCII control characters, keeping printable text only.
+    ${output}    Replace String Using Regexp    ${output}    [\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]    ${EMPTY}
+    ${lines}    Split To Lines    ${output}
+    ${clean_output}    Set Variable    ${EMPTY}
+    FOR    ${line}    IN    @{lines}
+        ${line}    Strip String    ${line}
+        IF    $line == ''
+            CONTINUE
+        END
+        ${clean_output}    Catenate    SEPARATOR=\n    ${clean_output}    ${line}
+    END
+    ${clean_output}    Strip String    ${clean_output}
+    RETURN    ${clean_output}
